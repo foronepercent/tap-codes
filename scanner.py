@@ -10,7 +10,7 @@ import requests
 
 GROUP_ID = "711102"
 TAP_TAP_BASE = "https://www.taptap.cn/webapiv2"
-PUSHPLUS_URL = "http://www.pushplus.plus/send"
+SERVERCHAN_URL = "https://sctapi.ftqq.com"
 KEYWORDS = ["兑换码", "有效期", "兑换要求"]
 WINDOW_SIZE = 8
 CACHE_FILE = "pushed_codes.json"
@@ -157,37 +157,33 @@ def save_cache(codes: dict):
 
 
 def push_to_phone(code_info: dict) -> bool:
-    token = os.environ.get("PUSHPLUS_TOKEN", "")
-    if not token:
-        print("WARNING: PUSHPLUS_TOKEN 未设置，跳过推送", file=sys.stderr)
+    send_key = os.environ.get("SERVERCHAN_KEY", "")
+    if not send_key:
+        print("WARNING: SERVERCHAN_KEY 未设置，跳过推送", file=sys.stderr)
         return False
 
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
     expiry_str = code_info["expiry"].strftime("%Y-%m-%d %H:%M") if code_info["expiry"] else "未知"
 
     title = f"新兑换码: {code_info['code']}"
-    content = (
-        f"【兑换码】{code_info['code']}\n"
-        f"【有效期至】{expiry_str}\n"
-        f"【兑换要求】{code_info['requirement']}\n"
-        f"【扫描时间】{now}"
+    desp = (
+        f"**兑换码**：{code_info['code']}\n\n"
+        f"**有效期至**：{expiry_str}\n\n"
+        f"**兑换要求**：{code_info['requirement']}\n\n"
+        f"**扫描时间**：{now}"
     )
 
-    payload = {
-        "token": token,
-        "title": title,
-        "content": content,
-        "template": "txt",
-    }
+    payload = {"title": title, "desp": desp}
+    url = f"{SERVERCHAN_URL}/{send_key}.send"
 
-    resp = requests.post(PUSHPLUS_URL, json=payload, timeout=10)
+    resp = requests.post(url, data=payload, timeout=10)
     resp.raise_for_status()
     result = resp.json()
-    if result.get("code") == 200:
+    if result.get("code") == 0:
         print(f"  + 推送成功: {code_info['code']}")
         return True
     else:
-        print(f"  x 推送失败: {result.get('msg', '未知错误')}", file=sys.stderr)
+        print(f"  x 推送失败: {result.get('message', '未知错误')}", file=sys.stderr)
         return False
 
 

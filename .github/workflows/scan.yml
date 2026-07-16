@@ -30,7 +30,7 @@ jobs:
 
       - name: Run scanner
         env:
-          PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
+          SERVERCHAN_KEY: ${{ secrets.SERVERCHAN_KEY }}
         run: python scanner.py
 
       - name: Save cache
