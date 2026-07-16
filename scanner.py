@@ -15,6 +15,7 @@ KEYWORDS = ["兑换码", "有效期", "兑换要求"]
 WINDOW_SIZE = 8
 CACHE_FILE = "pushed_codes.json"
 REQUEST_INTERVAL = 1.5
+MAX_AGE_HOURS = 168  # 只扫最近7天的帖子
 
 HEADERS = {
     "X-UA": "V=1&PN=WebApp&LANG=zh_CN&VN_CODE=102&LOC=CN&PLT=PC&DT=PC&UID=abc&OS=Windows",
@@ -35,13 +36,15 @@ def fetch_official_topics() -> list[dict]:
     resp = requests.get(url, params=params, headers=HEADERS, timeout=15)
     resp.raise_for_status()
     data = resp.json()
+    now = datetime.now().timestamp()
     topics = []
     for item in data.get("data", {}).get("list", []):
         moment = item.get("moment", {})
         topic = moment.get("topic", {})
         tid = topic.get("id_str")
         title = topic.get("title", "")
-        if tid:
+        created = moment.get("created_time", 0)
+        if tid and (now - created) < MAX_AGE_HOURS * 3600:
             topics.append({"id": tid, "title": title})
     return topics
 
