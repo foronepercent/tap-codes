@@ -2,8 +2,8 @@ name: TapTap 兑换码扫描
 
 on:
   schedule:
-    - cron: '0 0 * * *'
-    - cron: '0 12 * * *'
+    - cron: '7 0 * * *'
+    - cron: '7 12 * * *'
   workflow_dispatch:
 
 jobs:
