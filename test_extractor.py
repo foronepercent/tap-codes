@@ -37,6 +37,12 @@ MULTI_BLOCK = (
     "兑换要求：等级大于等于10级\n"
 )
 
+EXAMPLE_3 = (
+    "兑换码：无尽奔奔联动\n"
+    "有效期至：2026年8月4日 23:59:59\n"
+    "兑换要求：大熔炉等级 ≥ 9级"
+)
+
 
 def test_example_1():
     blocks = extract_code_blocks(EXAMPLE_1)
@@ -73,6 +79,17 @@ def test_multi_blocks():
     print("[PASS] test_multi_blocks")
 
 
+def test_example_3():
+    """中文日期格式 + 特殊字符"""
+    blocks = extract_code_blocks(EXAMPLE_3)
+    assert len(blocks) == 1, f"Expected 1 block, got {len(blocks)}"
+    assert blocks[0]["code"] == "无尽奔奔联动"
+    assert blocks[0]["expiry"] is not None
+    assert blocks[0]["expiry"].strftime("%Y-%m-%d %H:%M:%S") == "2026-08-04 23:59:59"
+    assert "≥" in blocks[0]["requirement"]
+    print("[PASS] test_example_3")
+
+
 def test_expiry_parsing():
     dt = _parse_expiry("2026-07-16 23:59:00")
     assert dt is not None
@@ -82,8 +99,13 @@ def test_expiry_parsing():
     assert dt2 is not None
     assert dt2.hour == 0 and dt2.minute == 0
 
-    dt3 = _parse_expiry("invalid")
-    assert dt3 is None
+    dt3 = _parse_expiry("2026年8月4日 23:59:59")
+    assert dt3 is not None, f"Failed to parse '2026年8月4日 23:59:59'"
+    assert dt3.month == 8 and dt3.day == 4
+    assert dt3.strftime("%Y-%m-%d %H:%M:%S") == "2026-08-04 23:59:59"
+
+    dt4 = _parse_expiry("invalid")
+    assert dt4 is None
 
     print("[PASS] test_expiry_parsing")
 
@@ -105,6 +127,7 @@ if __name__ == "__main__":
     test_example_2()
     test_no_code()
     test_multi_blocks()
+    test_example_3()
     test_expiry_parsing()
     test_expired_skip()
     print("\n=== 全部测试通过 ===")

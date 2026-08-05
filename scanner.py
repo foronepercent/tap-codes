@@ -55,6 +55,14 @@ def fetch_topic_body(topic_id: str) -> str:
     resp = requests.get(url, params=params, headers=HEADERS, timeout=15)
     resp.raise_for_status()
     data = resp.json().get("data", {})
+    fp = data.get("first_post", {})
+    contents = fp.get("contents", {})
+    raw = contents.get("raw_text", "") or contents.get("text", "")
+    if raw:
+        raw = re.sub(r"\[/?[a-z]+\]", "", raw)
+        raw = re.sub(r"<br\s*/?>", "\n", raw)
+        raw = raw.strip()
+        return raw
     topic = data.get("topic", {})
     return topic.get("summary", "")
 
@@ -105,7 +113,7 @@ def _parse_block(lines: list[str]) -> Optional[dict]:
 
         if "有效期" in line:
             match = re.search(
-                r"(\d{4}[-/年]\d{1,2}[-/月]\d{1,2}(?:[\sT]\d{1,2}[:：]\d{2}(?:[:：]\d{2})?)?)",
+                r"(\d{4}[-/年]\d{1,2}[-/月]\d{1,2}(?:[日\sT]+\d{1,2}[:：]\d{2}(?:[:：]\d{2})?)?)",
                 line,
             )
             if match:
@@ -131,6 +139,13 @@ def _parse_block(lines: list[str]) -> Optional[dict]:
 
 def _parse_expiry(date_str: str) -> Optional[datetime]:
     s = date_str.replace("年", "-").replace("月", "-").replace("日", "").replace("/", "-").replace("：", ":")
+    parts = re.split(r"[-/\sT]", s)
+    if len(parts) >= 3:
+        y = parts[0].zfill(4)
+        m = parts[1].zfill(2)
+        d = parts[2].zfill(2)
+        tail = " ".join(parts[3:]) if len(parts) > 3 else ""
+        s = f"{y}-{m}-{d} {tail}".strip()
     for fmt in [
         "%Y-%m-%d %H:%M:%S",
         "%Y-%m-%dT%H:%M:%S",
